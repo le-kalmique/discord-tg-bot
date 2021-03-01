@@ -1,0 +1,25 @@
+{
+  "name": "discord-tg-bot",
+  "version": "1.0.0",
+  "description": "Tg bot to connect group chat with discord server",
+  "main": "bot.js",
+  "dependencies": {
+    "discord.js": "^12.5.1",
+    "node-telegram-bot-api": "^0.51.0",
+    "nodemon": "^2.0.7"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/le-kalmique/discord-tg-bot.git"
+  },
+  "author": "Renata Dzherhalova",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/le-kalmique/discord-tg-bot/issues"
+  },
+  "homepage": "https://github.com/le-kalmique/discord-tg-bot#readme"
+}
