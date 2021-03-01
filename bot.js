@@ -3,10 +3,12 @@ const Discord = require('discord.js');
 
 const config = require('./config.json');
 
-const discord = new Discord.Client();
-const bot = new TelegramBot(config.token, {polling: true});
 
-discord.login(config.discord_token);
+
+const discord = new Discord.Client();
+const bot = new TelegramBot(process.env.TG_TOKEN, {polling: true});
+
+discord.login(process.env.DISCORD_TOKEN);
 discord.on('ready', () => {
   console.log(`Logged in as ${discord.user.tag}!`);
 });  
