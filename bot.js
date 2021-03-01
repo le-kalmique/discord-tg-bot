@@ -1,55 +1,81 @@
 const TelegramBot = require('node-telegram-bot-api');
 const Discord = require('discord.js');
-
-const config = require('./config.json');
-
+const mongoose = require('mongoose');
 
 
-const discord = new Discord.Client();
+const logger = require('./logger');
+const User = require('./bd/User');
+
+
+/** ------------------------------- STARTING -------------------------------- */
+
 const bot = new TelegramBot(process.env.TG_TOKEN, {polling: true});
 
+const discord = new Discord.Client();
 discord.login(process.env.DISCORD_TOKEN);
 discord.on('ready', () => {
-  console.log(`Logged in as ${discord.user.tag}!`);
-});  
+  console.log(`DISCORD: Logged in as ${discord.user.tag}!`);
+}); 
 
-discord.on('typingStart', (channel, user) => {
-  if (user.username == 'Regis(Илья)')
-    channel.send('лучше не стоит');
-});
+mongoose
+  .connect(
+    `mongodb+srv://botUser:${process.env.DB_PASSWORD}@cluster0.vpq0d.mongodb.net/usersDb?retryWrites=true&w=majority`, 
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    }
+  )
+  .then(() => console.log('DB: MongoDB cluster connected'))
+  .catch(e => console.log('DB: MongoDB cluster connection failed\n', e));
 
-discord.on('message', message => {
+/** ------------------------------------------------------------------------- */
+
+
+discord.on('message', async message => {
   if (message.content === 'ping') {
     message.channel.send('хуинг');
   }
 });
 
-const usersInChannel = [];
 
-discord.on("voiceStateUpdate", function(oldMember, newMember) {
+const usersInChannel = [];
+discord.on("voiceStateUpdate", async (oldMember, newMember) => {
   if (!newMember.channelID) {
-    console.log('user left');
     const index = usersInChannel.indexOf(newMember.id);
     usersInChannel.splice(index, 1);
   } 
   else if (newMember.channelID && !oldMember.channelID) {
-    console.log('user connected');
     usersInChannel.push(newMember.id);
   }
 
-  // if (usersInChannel.length > 2) {
-  //   bot.sendMessage(id, 'В дискорде больше двух людей');
-  // }
-
-  if (newMember.streaming && !oldMember.streaming) {
-    config.chats_ids.map(id => {
-      bot.sendMessage(id, 'В дискорде кто-то что-то стримит, можно глянуть');
+  if (usersInChannel.length > 2) {
+    const users = await User.find({});
+    users.map(({ id }) => {
+      bot.sendMessage(id, 'В дискорде собралось больше 2х людей');
     })
   }
 
+  if (newMember.streaming && !oldMember.streaming) {
+    const users = await User.find({});
+    users.map(({ id }) => {
+      bot.sendMessage(id, 'В дискорде кто-то что-то стримит, можно глянуть');
+    })
+  }
 });
 
-bot.onText(/.*/, async (msg, match) => {
-  bot.sendMessage(msg.chat.id, 'hello world');
-  bot.sendMessage(msg.chat.id, msg.chat.id);
+bot.onText(/\/subscribe/, async msg => {
+  try {
+    const foundUser = await User.findOne({ id: msg.chat.id }).exec();
+    if (foundUser) {
+      bot.sendMessage(msg.chat.id, 'Ты уже подписан на события');
+      return;
+    }
+
+    const user = new User({ id: msg.chat.id });
+    await user.save();
+    bot.sendMessage(msg.chat.id, 'Подписал тебя на события в дискорде');
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, 'Подписка не сработала, напиши админу');
+    logger('Error', e);
+  }
 });
